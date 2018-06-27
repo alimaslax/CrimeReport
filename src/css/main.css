@@ -1,0 +1,47 @@
+body {
+  padding-top: 54px;
+  background-color: #233139;
+  color:#f2f2f2;
+}
+@media (min-width: 992px) {
+  body {
+    padding-top: 56px;
+  }
+}
+section {
+  padding: 200px 0;
+}
+header {
+  padding: 20px 0 100px;
+}
+
+.boxes{
+  height: 100%;
+  color:#000000;
+}
+.card-img-top {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+}
+select option {
+  color: #000000;
+}
+#inner {
+  display: table;
+  margin: 0 auto;
+}
+.card-data{
+  padding: 5px;
+}
+.data {
+    display: table; /* Make the container element behave like a table */
+}
+
+.cell {
+    display: table-cell; /* Make elements inside the container behave like table cells */
+}
+.counter {
+  font-size:50px;
+  float: left;
+}
