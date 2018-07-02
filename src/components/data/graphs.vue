@@ -1,17 +1,21 @@
 <template>
 <div id="graphs">
+
+  <br>
+  <h1>==============</h1>
+  <br>
   <div class="row">
     <div class="col-sm">
-      <canvas id="chart1" height="300"></canvas>
+      <canvas id="districtG" height="300"></canvas>
     </div>
     <div class="col-sm">
-      <canvas id="chart2" height="300"></canvas>
+      <canvas id="yearG" height="300"></canvas>
     </div>
     <div class="col-sm">
-      <canvas id="chart3" height="300"></canvas>
+      <canvas id="offenseG" height="300"></canvas>
     </div>
     <div class="col-sm">
-      <canvas id="polar" height="300"></canvas>
+      <canvas id="monthG" height="300"></canvas>
     </div>
   </div>
 </div>
@@ -22,15 +26,19 @@ export default {
   name: 'Graphs',
   data() {
     return {
+      msg:'hii',
       months: [],
       district: [],
       years: [],
       offense: []
     }
   },
+  computed:{
+
+  },
   mounted() {
-    //this.init();
-    this.fakeGraphs();
+    this.init();
+    //this.fakeGraphs();
   },
   methods: {
     init: function() {
@@ -96,41 +104,81 @@ export default {
       return r;
     },
     drawGraphs: function() {
-      var ch1Label = [];
-      var ch1Data = [];
-      var ch2Label = [];
-      var ch2Data = [];
-      var ch3Label = [];
-      var ch3Data = [];
-      var polarLabel = [];
-      var polarData = [];
+      var chDisLabel = [];
+      var chDisData = [];
+      var chYearLabel = [];
+      var chYearData = [];
+      var chOffLabel = [];
+      var chOffData = [];
+      var chMonthLabel = [];
+      var chMonthData = [];
       var that = this;
       async.series([
         //get limited data
         function f1(callback) {
           for (var i = 0; i < 5; i++) {
-            ch1Label.push(that.district[i]["key"]);
+            chDisLabel.push(that.district[i]["key"]);
           }
           for (var i = 0; i < 5; i++) {
-            ch1Data.push(that.district[i]["doc_count"]);
+            chDisData.push(that.district[i]["doc_count"]);
           }
-          for (var i = 0; i < 3; i++) {
-            ch2Label.push(that.years[i]["key"]);
+          for (var i = 0; i < 4; i++) {
+            chYearLabel.push(that.years[i]["key"]);
           }
-          for (var i = 0; i < 3; i++) {
-            ch2Data.push(that.years[i]["doc_count"]);
-          }
-          for (var i = 0; i < 10; i++) {
-            ch3Label.push(that.offense[i]["key"]);
+          for (var i = 0; i < 4; i++) {
+            chYearData.push(that.years[i]["doc_count"]);
           }
           for (var i = 0; i < 10; i++) {
-            ch3Data.push(that.offense[i]["doc_count"]);
+            chOffLabel.push(that.offense[i]["key"]);
+          }
+          for (var i = 0; i < 10; i++) {
+            chOffData.push(that.offense[i]["doc_count"]);
+          }
+          //must use switch to get order of doc_count right
+          for (var i = 0; i < 11; i++) {
+            switch (that.months[i]["key"]) {
+              case "1":
+                chMonthLabel.push("Jan");
+                break;
+              case "2":
+                chMonthLabel.push("Feb");
+                break;
+              case "3":
+                chMonthLabel.push("Mar");
+                break;
+              case "4":
+                chMonthLabel.push("Apr");
+                break;
+              case "5":
+                chMonthLabel.push("May");
+                break;
+              case "6":
+                chMonthLabel.push("Jun");
+                break;
+              case "7":
+                chMonthLabel.push("Jul");
+                break;
+              case "8":
+                chMonthLabel.push("Aug");
+                break;
+              case "9":
+                chMonthLabel.push("Sep");
+                break;
+              case "10":
+                chMonthLabel.push("Oct");
+                break;
+              case "11":
+                chMonthLabel.push("Nov");
+                break;
+              case "12":
+                chMonthLabel.push("Dec");
+                break;
+              default:
+                break;
+            }
           }
           for (var i = 0; i < 11; i++) {
-            polarLabel.push(that.months[i]["key"]);
-          }
-          for (var i = 0; i < 11; i++) {
-            polarData.push(that.months[i]["doc_count"]);
+            chMonthData.push(that.months[i]["doc_count"]);
           }
           callback(null);
         }
@@ -139,14 +187,14 @@ export default {
       });
 
       function draw() {
-        new Chart(document.getElementById('chart1'), {
+        new Chart(document.getElementById('districtG'), {
           type: 'bar',
           data: {
-            labels: ch1Label,
+            labels: chDisLabel,
             datasets: [{
               label: "Incidents",
               backgroundColor: ["#3e95cd", "#8e5ea2", "#3cba9f", "#e8c3b9", "#c45850"],
-              data: ch1Data
+              data: chDisData
             }]
           },
           options: {
@@ -159,14 +207,14 @@ export default {
             }
           }
         });
-        new Chart(document.getElementById("chart2"), {
+        new Chart(document.getElementById("yearG"), {
           type: 'doughnut',
           data: {
-            labels: ch2Label,
+            labels: chYearLabel,
             datasets: [{
               label: "Incidents",
-              backgroundColor: ["#3e95cd", "#8e5ea2", "#3cba9f", "#e8c3b9", "#c45850"],
-              data: ch2Data
+              backgroundColor: ["#FF0000", "#FF0000", "#3cba9f", "#e8c3b9", "#c45850"],
+              data: chYearData
             }]
           },
           options: {
@@ -176,119 +224,119 @@ export default {
             }
           }
         });
-        new Chart(document.getElementById("chart3"), {
-  type: 'horizontalBar',
-  data: {
-    labels: ch3Label,
-    datasets: [
-      {
-        label: "Number of Reports",
-        backgroundColor: ["#3e95cd", "#8e5ea2","#3cba9f","#e8c3b9","#c45850",
-                          "#3e95cd", "#8e5ea2","#3cba9f","#e8c3b9","#c45850"],
-        data: ch3Data
+        new Chart(document.getElementById("offenseG"), {
+          type: 'horizontalBar',
+          data: {
+            labels: chOffLabel,
+            datasets: [{
+              label: "Number of Reports",
+              backgroundColor: ["#3e95cd", "#8e5ea2", "#3cba9f", "#e8c3b9", "#c45850",
+                "#3e95cd", "#8e5ea2", "#3cba9f", "#e8c3b9", "#c45850"
+              ],
+              data: chOffData
+            }]
+          },
+          options: {
+            legend: {
+              display: false
+            },
+            title: {
+              display: true,
+              text: '2015 - 2018'
+            }
+          }
+        });
+        new Chart(document.getElementById("monthG"), {
+          type: 'polarArea',
+          data: {
+            labels: chMonthLabel,
+            datasets: [{
+              label: "Incidents(Thousands)",
+              backgroundColor: ["#3e95cd", "#8e5ea2", "#3cba9f", "#e8c3b9", "#c45850",
+                "#3e95cd", "#8e5ea2", "#3cba9f", "#e8c3b9", "#c45850",
+                "#3e95cd", "#8e5ea2"
+              ],
+              data: chMonthData
+            }]
+          },
+          options: {
+            title: {
+              display: true,
+              text: '2015-2018'
+            }
+          }
+        });
       }
-    ]
-  },
-  options: {
-    legend: { display: false },
-    title: {
-      display: true,
-      text: '2015 - 2018'
-    }
-  }
-});
-new Chart(document.getElementById("polar"), {
-    type: 'polarArea',
-    data: {
-      labels: polarLabel,
-      datasets: [
-        {
-          label: "Incidents(Thousands)",
-          backgroundColor: ["#3e95cd", "#8e5ea2","#3cba9f","#e8c3b9","#c45850",
-                            "#3e95cd", "#8e5ea2","#3cba9f","#e8c3b9","#c45850",
-                            "#3e95cd", "#8e5ea2"],
-          data: polarData
-        }
-      ]
     },
-    options: {
-      title: {
-        display: true,
-        text: '2015-2018'
-      }
-    }
-});
-      }
-    },
-    fakeGraphs: function(){
+    fakeGraphs: function() {
       new Chart(document.getElementById("chart1"), {
-    type: 'pie',
-    data: {
-      labels: ["Africa", "Asia", "Europe", "Latin America", "North America"],
-      datasets: [{
-        label: "Population (millions)",
-        backgroundColor: ["#3e95cd", "#8e5ea2","#3cba9f","#e8c3b9","#c45850"],
-        data: [2478,5267,734,784,433]
-      }]
-    },
-    options: {
-      title: {
-        display: true,
-        text: 'Predicted world population (millions) in 2050'
-      }
-    }
-});
-new Chart(document.getElementById("chart2"), {
-type: 'pie',
-data: {
-labels: ["Africa", "Asia", "Europe", "Latin America", "North America"],
-datasets: [{
-  label: "Population (millions)",
-  backgroundColor: ["#3e95cd", "#8e5ea2","#3cba9f","#e8c3b9","#c45850"],
-  data: [2478,5267,734,784,433]
-}]
-},
-options: {
-title: {
-  display: true,
-  text: 'Predicted world population (millions) in 2050'
-}
-}
-});
-new Chart(document.getElementById("chart3"), {
-type: 'pie',
-data: {
-labels: ["Africa", "Asia", "Europe", "Latin America", "North America"],
-datasets: [{
-  label: "Population (millions)",
-  backgroundColor: ["#3e95cd", "#8e5ea2","#3cba9f","#e8c3b9","#c45850"],
-  data: [2478,5267,734,784,433]
-}]
-},
-options: {
-title: {
-  display: true,
-  text: 'Predicted world population (millions) in 2050'
-}
-}
-});
-new Chart(document.getElementById("polar"), {
-type: 'pie',
-data: {
-labels: ["Africa", "Asia", "Europe", "Latin America", "North America"],
-datasets: [{
-  label: "Population (millions)",
-  backgroundColor: ["#3e95cd", "#8e5ea2","#3cba9f","#e8c3b9","#c45850"],
-  data: [2478,5267,734,784,433]
-}]
-},
-options: {
-title: {
-  display: true,
-  text: 'Predicted world population (millions) in 2050'
-}
-}
-});
+        type: 'pie',
+        data: {
+          labels: ["Africa", "Asia", "Europe", "Latin America", "North America"],
+          datasets: [{
+            label: "Population (millions)",
+            backgroundColor: ["#3e95cd", "#8e5ea2", "#3cba9f", "#e8c3b9", "#c45850"],
+            data: [2478, 5267, 734, 784, 433]
+          }]
+        },
+        options: {
+          title: {
+            display: true,
+            text: 'Predicted world population (millions) in 2050'
+          }
+        }
+      });
+      new Chart(document.getElementById("chart2"), {
+        type: 'pie',
+        data: {
+          labels: ["Africa", "Asia", "Europe", "Latin America", "North America"],
+          datasets: [{
+            label: "Population (millions)",
+            backgroundColor: ["#3e95cd", "#8e5ea2", "#3cba9f", "#e8c3b9", "#c45850"],
+            data: [2478, 5267, 734, 784, 433]
+          }]
+        },
+        options: {
+          title: {
+            display: true,
+            text: 'Predicted world population (millions) in 2050'
+          }
+        }
+      });
+      new Chart(document.getElementById("chart3"), {
+        type: 'pie',
+        data: {
+          labels: ["Africa", "Asia", "Europe", "Latin America", "North America"],
+          datasets: [{
+            label: "Population (millions)",
+            backgroundColor: ["#3e95cd", "#8e5ea2", "#3cba9f", "#e8c3b9", "#c45850"],
+            data: [2478, 5267, 734, 784, 433]
+          }]
+        },
+        options: {
+          title: {
+            display: true,
+            text: 'Predicted world population (millions) in 2050'
+          }
+        }
+      });
+      new Chart(document.getElementById("chart4"), {
+        type: 'pie',
+        data: {
+          labels: ["Africa", "Asia", "Europe", "Latin America", "North America"],
+          datasets: [{
+            label: "Population (millions)",
+            backgroundColor: ["#3e95cd", "#8e5ea2", "#3cba9f", "#e8c3b9", "#c45850"],
+            data: [2478, 5267, 734, 784, 433]
+          }]
+        },
+        options: {
+          title: {
+            display: true,
+            text: 'Predicted world population (millions) in 2050'
+          }
+        }
+      });
     }
   }
 }
