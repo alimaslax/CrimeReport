@@ -1,21 +1,21 @@
 <template>
   <div id="app">
     <Menu/>
+    <template v-if="$route.name === 'map'">
+    <router-view/>
+    </template>
+    <template v-else>
     <div class="container">
-      <div class="card boxes border border-primary">
-        <div class="row">
-    <div class="col-sm">
-      <img class="card-img-top" src="static/img/logo.png" alt="Card image cap"></img>
-    </div>
-    <div class="col-sm" style="padding-right:0px;">
-      <img class="card-img-top" src="static/img/logo.png" alt="Card image cap"></img>
-    </div>
-  </div>
+      <div class="card boxes">
+        <div class="card-top"></div>
           <div class="card-body">
+          <transition name="component-fade" mode="out-in">
             <router-view/>
+          </transition>
           </div>
         </div>
     </div>
+  </template>
   </div>
 </template>
 
@@ -25,6 +25,11 @@ export default {
   name: 'App',
   components: {
     Menu
+  },
+  data(){
+    return{
+      menu:'others'
+    }
   }
 }
 </script>
@@ -36,26 +41,38 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  background-color: #00477A;
-  margin-top: 60px;
-  padding-top: 30px;
+  margin-top: auto;
   padding-bottom: 30px;
 }
 a{
   color: #ffffff;
 }
-@media (min-width: 992px) {
-  body {
-    padding-top: 56px;
-  }
+.container{
+
+  max-width: 960px;
 }
-.card-img-top {
-    width: 40px;
+.card-top {
+    width: inherit;
     height: 40px;
-    object-fit: cover;
+    background: #a73737;  /* fallback for old browsers */
+    background-image: url("../static/img/banner.png");
+    margin-bottom: 0px;
+
+}
+.card-body{
+  padding: 1px;
 }
 .boxes{
   height: 100%;
   color:#000000;
+  margin-top: 50px;
+  border-color: #2c3e50;
+}
+.component-fade-enter-active, .component-fade-leave-active {
+  transition: opacity .5s ease;
+}
+.component-fade-enter, .component-fade-leave-to
+/* .component-fade-leave-active below version 2.1.8 */ {
+  opacity: 0;
 }
 </style>

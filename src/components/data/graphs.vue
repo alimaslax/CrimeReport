@@ -1,21 +1,17 @@
 <template>
 <div id="graphs">
-
-  <br>
-  <h1>==============</h1>
-  <br>
   <div class="row">
     <div class="col-sm">
-      <canvas id="districtG" height="300"></canvas>
+      <canvas id="offenseG" height="300"></canvas>
     </div>
     <div class="col-sm">
       <canvas id="yearG" height="300"></canvas>
     </div>
     <div class="col-sm">
-      <canvas id="offenseG" height="300"></canvas>
+      <canvas id="monthG" height="300"></canvas>
     </div>
     <div class="col-sm">
-      <canvas id="monthG" height="300"></canvas>
+      <canvas id="districtG" height="300"></canvas>
     </div>
   </div>
 </div>
@@ -24,16 +20,19 @@
 import async from 'async-es'
 export default {
   name: 'Graphs',
+  props: [
+    'search'
+  ],
   data() {
     return {
-      msg:'hii',
+      msg: 'hii',
       months: [],
       district: [],
       years: [],
       offense: []
     }
   },
-  computed:{
+  computed: {
 
   },
   mounted() {
@@ -76,6 +75,11 @@ export default {
           }
         ],
         function(err, results) {
+          //removes "NAME" "0" elastic search result
+          that.district.pop();
+          that.months.pop();
+          that.years.pop();
+          that.offense.pop();
           that.drawGraphs();
         });
     },
@@ -115,6 +119,10 @@ export default {
       var that = this;
       async.series([
         //get limited data
+        function f0(callback){
+          that.filterData(that.search);
+          callback(null);
+        },
         function f1(callback) {
           for (var i = 0; i < 5; i++) {
             chDisLabel.push(that.district[i]["key"]);
@@ -122,10 +130,10 @@ export default {
           for (var i = 0; i < 5; i++) {
             chDisData.push(that.district[i]["doc_count"]);
           }
-          for (var i = 0; i < 4; i++) {
+          for (var i in that.years) {
             chYearLabel.push(that.years[i]["key"]);
           }
-          for (var i = 0; i < 4; i++) {
+          for (var i in that.years) {
             chYearData.push(that.years[i]["doc_count"]);
           }
           for (var i = 0; i < 10; i++) {
@@ -174,6 +182,7 @@ export default {
                 chMonthLabel.push("Dec");
                 break;
               default:
+              chMonthLabel.push(that.months[i]["key"]);
                 break;
             }
           }
@@ -193,7 +202,7 @@ export default {
             labels: chDisLabel,
             datasets: [{
               label: "Incidents",
-              backgroundColor: ["#3e95cd", "#8e5ea2", "#3cba9f", "#e8c3b9", "#c45850"],
+              backgroundColor: ["#FF0000", "#8e5ea2", "#3cba9f", "#e8c3b9", "#c45850"],
               data: chDisData
             }]
           },
@@ -213,14 +222,14 @@ export default {
             labels: chYearLabel,
             datasets: [{
               label: "Incidents",
-              backgroundColor: ["#FF0000", "#FF0000", "#3cba9f", "#e8c3b9", "#c45850"],
+              backgroundColor: ["#FF0000","#9aa88c","#8ca8a8","#9a8ca8","	#aaaaaa","	#6B857C"],
               data: chYearData
             }]
           },
           options: {
             title: {
               display: true,
-              text: 'Crime Rate By Year'
+              text: 'Incidents By Year'
             }
           }
         });
@@ -230,7 +239,7 @@ export default {
             labels: chOffLabel,
             datasets: [{
               label: "Number of Reports",
-              backgroundColor: ["#3e95cd", "#8e5ea2", "#3cba9f", "#e8c3b9", "#c45850",
+              backgroundColor: ["#FF0000", "#8e5ea2", "#3cba9f", "#e8c3b9", "#c45850",
                 "#3e95cd", "#8e5ea2", "#3cba9f", "#e8c3b9", "#c45850"
               ],
               data: chOffData
@@ -239,10 +248,6 @@ export default {
           options: {
             legend: {
               display: false
-            },
-            title: {
-              display: true,
-              text: '2015 - 2018'
             }
           }
         });
@@ -252,91 +257,89 @@ export default {
             labels: chMonthLabel,
             datasets: [{
               label: "Incidents(Thousands)",
-              backgroundColor: ["#3e95cd", "#8e5ea2", "#3cba9f", "#e8c3b9", "#c45850",
-                "#3e95cd", "#8e5ea2", "#3cba9f", "#e8c3b9", "#c45850",
-                "#3e95cd", "#8e5ea2"
+              backgroundColor: ["#FF0000", "#9aa88c","#8ca8a8","#9a8ca8","	#aaaaaa","	#6B857C",
+              "#7B7C65","#D2D4B7","#C1C1B8","#A8C1C8","#6B6F74","#D2D4B7"
               ],
               data: chMonthData
             }]
           },
           options: {
-            title: {
-              display: true,
-              text: '2015-2018'
+            scales: {
+              yAxes: [{
+                ticks: {
+                  display: false
+                }
+              }]
             }
           }
         });
       }
     },
-    fakeGraphs: function() {
-      new Chart(document.getElementById("chart1"), {
-        type: 'pie',
-        data: {
-          labels: ["Africa", "Asia", "Europe", "Latin America", "North America"],
-          datasets: [{
-            label: "Population (millions)",
-            backgroundColor: ["#3e95cd", "#8e5ea2", "#3cba9f", "#e8c3b9", "#c45850"],
-            data: [2478, 5267, 734, 784, 433]
-          }]
-        },
-        options: {
-          title: {
-            display: true,
-            text: 'Predicted world population (millions) in 2050'
-          }
+    filterData: function(data) {
+      var doc_count = 0;
+      var name = "";
+      var index;
+      //modify years
+      if (data.years.length >= 1) {
+        for (var i in data.years) {
+          index = getIndex(data.years[i], this.years);
+          name += data.years[i] + " ";
+          doc_count += this.years[index]["doc_count"];
+          this.years.splice(index, 1);
         }
-      });
-      new Chart(document.getElementById("chart2"), {
-        type: 'pie',
-        data: {
-          labels: ["Africa", "Asia", "Europe", "Latin America", "North America"],
-          datasets: [{
-            label: "Population (millions)",
-            backgroundColor: ["#3e95cd", "#8e5ea2", "#3cba9f", "#e8c3b9", "#c45850"],
-            data: [2478, 5267, 734, 784, 433]
-          }]
-        },
-        options: {
-          title: {
-            display: true,
-            text: 'Predicted world population (millions) in 2050'
-          }
+        this.years.splice(0, 0, {
+          "key": name,
+          "doc_count": doc_count
+        });
+      }
+      //modify months
+      console.log(this.months);
+      if (data.months.length) {
+        doc_count = 0;
+        name = "";
+        for (var i in data.months) {
+          index = getIndex(data.months[i], this.months);
+          name += data.months[i] + " ";
+          doc_count += this.months[index]["doc_count"];
+          this.months.splice(index, 1);
         }
-      });
-      new Chart(document.getElementById("chart3"), {
-        type: 'pie',
-        data: {
-          labels: ["Africa", "Asia", "Europe", "Latin America", "North America"],
-          datasets: [{
-            label: "Population (millions)",
-            backgroundColor: ["#3e95cd", "#8e5ea2", "#3cba9f", "#e8c3b9", "#c45850"],
-            data: [2478, 5267, 734, 784, 433]
-          }]
-        },
-        options: {
-          title: {
-            display: true,
-            text: 'Predicted world population (millions) in 2050'
+        this.months.splice(0, 0, {
+          "key": name,
+          "doc_count": doc_count
+        });
+      }
+      if(data.options.length>=1){
+        doc_count=0;
+        name="";
+        console.log(this.offense);
+          for(var i in data.options){
+            if(data.options[i]=="motor")
+              {
+                index = getIndex("Motor Vehicle Accident Response", this.offense);
+                name += data.options[i] + " ";
+                doc_count += this.offense[index]["doc_count"];
+                this.offense.splice(index, 1);
+              }
+              if(data.options[i]=="assault")
+                {
+                  index = getIndex("Simple Assault", this.offense);
+                  name += data.options[i] + " ";
+                  doc_count += this.offense[index]["doc_count"];
+                  this.offense.splice(index, 1);
+                }
           }
+          this.offense.splice(0, 0, {
+            "key": name,
+            "doc_count": doc_count
+          });
         }
-      });
-      new Chart(document.getElementById("chart4"), {
-        type: 'pie',
-        data: {
-          labels: ["Africa", "Asia", "Europe", "Latin America", "North America"],
-          datasets: [{
-            label: "Population (millions)",
-            backgroundColor: ["#3e95cd", "#8e5ea2", "#3cba9f", "#e8c3b9", "#c45850"],
-            data: [2478, 5267, 734, 784, 433]
-          }]
-        },
-        options: {
-          title: {
-            display: true,
-            text: 'Predicted world population (millions) in 2050'
-          }
+
+      function getIndex(key, arr) {
+        for (var i = 0; i < arr.length; i++) {
+          if (arr[i]["key"] == key)
+            return i;
         }
-      });
+      }
     }
   }
 }

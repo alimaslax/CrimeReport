@@ -1,165 +1,258 @@
 <template>
 <div class="data">
-  <section id="data" v-if="display == 'true'">
-  <legend>Search Results Data</legend>
-  <br>
-</section>
-  <legend>Graphs</legend>
-  <br> <Graphs/>
+  <div v-if="checkParams()">
+  <div class="blue">
+    <h2>{{count}}</h2>
+    <h3>Reported Incidents</h3>
+    {{getMsg}}
+  </div>
+
+    <Graphs :search="search"></Graphs>
+    <router-link to="map" class="btn btn-primary" style="margin: auto;width:30%;border:3px;padding:10px;">Maps</router-link>
+    </div>
+  <div v-if = "checkParams()==false">
+    <h1>Select A Field Below</h1>
+    <router-link to="search" class="btn btn-primary" style="margin: auto;width:30%;border:3px;padding:10px;">Search</router-link>
+    <h1>Or Go To Maps</h1>
+    <router-link to="map" class="btn btn-primary" style="margin: auto;width:30%;border:3px;padding:10px;">Maps</router-link>
+  </div>
 </div>
 </template>
 
 <script>
 import Graphs from './data/graphs'
+import async from 'async-es'
 export default {
   components: {
     Graphs
   },
   data() {
     return {
+      search: this.$route.params,
       data: [],
-      display:'false'
+      count: 0,
+      msg: 'Days:'+5
+    }
+  },
+  computed: {
+    getMsg: function(){
+      var string='';
+      string+="Year(s): "
+      for(var key in this.$route.params.years){
+        string+=this.$route.params.years[key]+" ";
+      }
+      string+="Month(s): "
+      for(var key in this.$route.params.months){
+        string+=this.$route.params.months[key]+ " ";
+      }
+      string+="Day(s): "
+      for(var key in this.$route.params.days){
+        string+=this.$route.params.days[key]+ " ";
+      }
+      string+="Option(s): "
+      for(var key in this.$route.params.options){
+        string+=this.$route.params.options[key]+ " ";
+      }
+      string+="Part(s): "
+      for(var key in this.$route.params.parts){
+        string+=this.$route.params.parts[key] + " ";
+      }
+      return string;
     }
   },
   mounted() {
+    if (this.checkParams()) {
+      this.init();
+    }
   },
   methods: {
-    drawGraphs: function(result) {
-      var district = [];
-      var shooting = [];
-      var code = [];
-      var year = [];
-      var week = [];
+    init: function() {
+      var that = this;
+      async.waterfall([
+          function func1(callback) {
+            var options = [];
+            var date = [];
+            if (that.search.years.length >= 1)
+              date.push({
+                term: "YEAR",
+                data: that.search.years
+              });
+            if (that.search.months.length >= 1)
+              date.push({
+                term: "MONTH",
+                data: that.search.months
+              });
+            if (that.search.days.length >= 1)
+              date.push({
+                term: "DAY_OF_WEEK",
+                data: that.search.days
+              });
+            if (that.search.options.length >= 1) {
+              var string = [];
+              for (var key in that.search.options) {
+                if (that.search.options[key] == 'motor') {
+                  string.push("Auto Theft", "Larceny From Motor Vehicle",
+                    "Motor Vehicle Accident Response", "Towed","Auto Theft Recovery");
+                }
+                if (that.search.options[key] == 'med') {
+                  string.push("Medical Assistance");
+                }
+                if (that.search.options[key] == 'drug') {
+                  string.push("Drug Violation");
+                }
+                if (that.search.options[key] == 'theft') {
+                  string.push("Robbery","Counterfeiting");
+                }
+                if (that.search.options[key] == 'assault') {
+                  string.push("Aggravated Assault", "Simple Assault");
+                }
+                if (that.search.options[key] == 'guns') {
+                  string.push("Firearm Discovery","Ballistics","Firearm Violations");
+                }
+                if (that.search.options[key] == 'investigate') {
+                  string.push("Harassment","Investigate Property");
+                }
+                if (that.search.options[key] == 'other') {
+                  string.push("Other");
+                }
+              }
+              options.push({
+                term: "OFFENSE_CODE_GROUP",
+                data: string
+              });
+            }
+            callback(null, date, options);
+          },
+          //get the data in ORDER
+          function func2(date, options, callback) {
+            var promise1 = that.request(that.getQuery(date, options));
+            Promise.all([promise1]).then(function(values) {
+              callback(null, values, options);
+            });
+          },
+          //sort and set the data in ORDER
+          function func3(date, options, callback) {
+            that.data.push(date);
+            callback(null, 'done');
+          }
+        ],
+        function(err, results) {
+          that.startTimer(that.data[0][0].data.hits.total);
+        });
+    },
+    //returns elastic search query
+    getQuery: function(date, options) {
+      var query = '';
 
-      function order() {
-        for (var i = 0; i < result.length; i++) {
-          if (result[i].length - 1 == "DISTRICT") {
-            for (var j = 0; j < result[i].length - 1; j++) {
-              alert(result[i][j]);
+      function getString(string) {
+        var temp = '';
+        var array = [];
+        var must = '';
+        for (var i = 0; i < string.length; i++) {
+          if (string[i]["data"].length > 1) {
+            array = string[i]["data"];
+            for (var key in array) {
+              temp += '{ "match" : { "' + string[i]["term"] + '" : "' + array[key] + '" } }';
+              if (key != array.length - 1)
+                temp += ',';
             }
+            must += '{ "bool": { "should": [ ' + temp + '] } }';
+            temp = '';
+          } else {
+            must += '{ "match" : { "' + string[i]["term"] + '" : "' + string[i]["data"] + '" } }';
           }
+          //add coma if not end
+          if (i != string.length - 1)
+            must += ',';
         }
+        return '"must": [' + must + ']';
       }
-      new Promise((resolve, reject) => {
-        resolve(order());
-      }).then(() => {
-        /*
-        new Chart(document.getElementById('chart1'), {
-          type: 'bar',
-          data: {
-            labels: [district[0]["key"], district[1]["key"], district[2]["key"], district[3]["key"], district[4]["key"]],
-            datasets: [{
-              label: "Incidents",
-              backgroundColor: ["#3e95cd", "#8e5ea2", "#3cba9f", "#e8c3b9", "#c45850"],
-              data: [district[0]["doc_count"], district[1]["doc_count"], district[2]["doc_count"], district[3]["doc_count"], district[4]["doc_count"]]
-            }]
-          },
-          options: {
-            legend: {
-              display: false
-            },
-            title: {
-              display: true,
-              text: 'Incidents By District(2015-NOW)'
-            }
-          }
-        });
-        */
-        new Chart(document.getElementById("chart2"), {
-          type: 'doughnut',
-          data: {
-            labels: ["Africa", "Asia", "Europe", "Latin America", "North America"],
-            datasets: [{
-              label: "Population (millions)",
-              backgroundColor: ["#3e95cd", "#8e5ea2", "#3cba9f", "#e8c3b9", "#c45850"],
-              data: [2478, 5267, 734, 784, 433]
-            }]
-          },
-          options: {
-            title: {
-              display: true,
-              text: 'Predicted world population (millions) in 2050'
-            }
-          }
-        });
-        new Chart(document.getElementById("chart3"), {
-          type: 'radar',
-          data: {
-            labels: ["Africa", "Asia", "Europe", "Latin America", "North America"],
-            datasets: [{
-              label: "1950",
-              fill: true,
-              backgroundColor: "rgba(179,181,198,0.2)",
-              borderColor: "rgba(179,181,198,1)",
-              pointBorderColor: "#fff",
-              pointBackgroundColor: "rgba(179,181,198,1)",
-              data: [8.77, 55.61, 21.69, 6.62, 6.82]
-            }, {
-              label: "2050",
-              fill: true,
-              backgroundColor: "rgba(255,99,132,0.2)",
-              borderColor: "rgba(255,99,132,1)",
-              pointBorderColor: "#fff",
-              pointBackgroundColor: "rgba(255,99,132,1)",
-              pointBorderColor: "#fff",
-              data: [25.48, 54.16, 7.61, 8.06, 4.45]
-            }]
-          },
-          options: {
-            title: {
-              display: true,
-              text: 'Distribution in % of world population'
-            }
-          }
-        });
-        new Chart(document.getElementById("chart4"), {
-          type: 'bar',
-          data: {
-            labels: ["1900", "1950", "1999", "2050"],
-            datasets: [{
-              label: "Europe",
-              type: "line",
-              borderColor: "#8e5ea2",
-              data: [408, 547, 675, 734],
-              fill: false
-            }, {
-              label: "Africa",
-              type: "line",
-              borderColor: "#3e95cd",
-              data: [133, 221, 783, 2478],
-              fill: false
-            }, {
-              label: "Europe",
-              type: "bar",
-              backgroundColor: "rgba(0,0,0,0.2)",
-              data: [408, 547, 675, 734],
-            }, {
-              label: "Africa",
-              type: "bar",
-              backgroundColor: "rgba(0,0,0,0.2)",
-              backgroundColorHover: "#3e95cd",
-              data: [133, 221, 783, 2478]
-            }]
-          },
-          options: {
-            title: {
-              display: true,
-              text: 'Population growth (millions): Europe & Africa'
-            },
-            legend: {
-              display: false
-            }
-          }
-        });
-      });
+      //Selected a date & options
+      if (date.length >= 1 && options.length >= 1) {
+        return '{"size":0,"query": { "bool": {' + getString(options) + ',"filter": {"bool": {' + getString(date) + '}}}}}';
+      }
+      //Selected a date but no options
+      if (date.length >= 1 && !(options.length >= 1)) {
+        return '{"size":0, "query": { "constant_score": { "filter": {"bool": {' + getString(date) + '}}}}}';
+      }
+      //Selected options but no date
+      if (options.length >= 1 && !(date.length >= 1)) {
+        return '{"size":0,"query": {"bool": {' + getString(options) + '}}}';
+      }
+      //If date is a string that means just get the aggs
+      else
+        return '{ "size": 10, "aggs": { "sum": { "terms": { "field": "' + date + '.keyword", "size":500 } } } }';
+    },
+    //returns elastic search query
+    request: function(req) {
+      var r = this.$axios.request({
+          method: 'Post',
+          url: '/search/crime/_search',
+          data: JSON.parse(req),
+          responseType: 'json'
+        })
+        .then((response) => {
+          return response;
+        }, (error) => {});
+      return r;
+    },
+    startTimer: function(num) {
+      var count1 = setInterval(() => {
+        if (this.count > num) {
+          clearInterval(count1)
+          this.count = num;
+          return;
+        }
+        return this.count+=Math.floor(2+ this.count/10);
+      }, 1);
+    },
+    checkParams(){
+      for(var key in this.search){
+        if(this.search[key].length >=1)
+          return true;
+      }
+      return false;
     }
   }
 }
 </script>
 
 <style scoped>
-#tablediv {
+div.data {
+  font-family: Impact, Charcoal, sans-serif;
+}
+
+.row {
+  padding: 0.25rem;
+}
+
+.blue {
   width: inherit;
-  overflow: auto;
+  color: #ffffff;
+  padding: 0px;
+  background: #000428;
+  /* fallback for old browsers */
+  background: -webkit-linear-gradient(to top, #004e92, #000428);
+  /* Chrome 10-25, Safari 5.1-6 */
+  background: linear-gradient(to top, #004e92, #000428);
+  /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+}
+
+.extra {
+  padding-bottom: 100px;
+}
+
+.msg {
+  font-size: 20px;
+}
+
+table {
+  width: 100%;
+}
+
+th {
+  height: 50px;
+  padding: 0px;
+  margin: 0px;
 }
 </style>
